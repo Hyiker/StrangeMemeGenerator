@@ -139,7 +139,7 @@
                 img.onload = function () {
                     let imgWidth = img.width,
                         imgHeight = img.height;
-                    textAreaHeight = imgHeight / 3;
+                    textAreaHeight = Math.min(Math.max(imgHeight / 3, 80), 120);
                     // alert(imgWidth + "," + imgHeight);
                     oldHeight =
                         Math.round(
