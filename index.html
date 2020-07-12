@@ -8,6 +8,217 @@
         <meta name="description" content="生草的黑白日文表情包生成器" />
     </head>
     <body>
-        <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.11/vue.min.js"></script>
+        <header>
+            <h1>生草黑白日文表情包生成器</h1>
+            <div class="description">
+                <span>奇怪的表情包增加了</span>
+            </div>
+        </header>
+        <main>
+            <canvas class="display" width="700" height="350"></canvas>
+            <div class="input-wrapper">
+                <input
+                    type="text"
+                    class="text-raw"
+                    placeholder="输入表情包文字"
+                />
+            </div>
+            <input
+                id="file-selector"
+                type="file"
+                accept="image/png, image/jpeg, image/gif, image/jpg"
+            />
+        </main>
+        <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.19.2/axios.min.js"></script>
+        <script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.0.0/core.min.js"></script>
+        <script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.0.0/md5.min.js"></script>
+        <script type="application/javascript">
+            let display = document.querySelector(".display");
+            let context = display.getContext("2d");
+            let dpr = 1;
+            let text = "";
+            let textAreaHeight = 80;
+            let translation_url =
+                "https://fanyi-api.baidu.com/api/trans/vip/translate";
+            let appid = "20200427000431319";
+            let appkey = "lvDuIYmoNeRYuR_n2JXB";
+            let oldWidth = parseInt(window.innerWidth * 0.7);
+            let oldHeight = display.height;
+            let file_selector = document.getElementById("file-selector");
+            makeHighRes(display);
+
+            window.onload = onLoad;
+            file_selector.onchange = function () {
+                let files = file_selector.files;
+                let reader = new FileReader();
+                reader.readAsDataURL(files[0]);
+                reader.onload = function (e) {
+                    drawImage(this.result);
+                };
+            };
+            display.onclick = function () {
+                const event = new MouseEvent("click", {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                });
+                file_selector.dispatchEvent(event);
+            };
+            document.querySelector(".text-raw").oninput = function () {
+                text = this.value;
+                translate(text)
+                    .then(function (response) {
+                        context.fillStyle = "#000";
+                        console.log(response);
+                        let translated = response.data.trans_result[0].dst;
+                        context.fillRect(
+                            0,
+                            display.height / dpr - textAreaHeight,
+                            display.width / dpr,
+                            textAreaHeight
+                        );
+                        _drawText(
+                            text,
+                            display.width / 2,
+                            display.height - textAreaHeight / 2,
+                            textAreaHeight / dpr,
+                            "#fff"
+                        );
+                        _drawText(
+                            translated,
+                            display.width / 2,
+                            display.height - textAreaHeight * 1.1,
+                            textAreaHeight / dpr,
+                            "#fff"
+                        );
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
+            };
+
+            function onLoad() {
+                drawText("拖拽图片到此处或点击选择");
+            }
+            function translate(text) {
+                let q = encodeURI(text);
+                let salt = Math.round(Math.random() * 10000);
+                let sign = CryptoJS.MD5(appid + text + salt + appkey);
+                let url_with_query =
+                    translation_url +
+                    "?" +
+                    "q=" +
+                    q +
+                    "&from=auto&to=jp&appid=" +
+                    appid +
+                    "&salt=" +
+                    salt +
+                    "&sign=" +
+                    sign;
+                return axios.get(url_with_query);
+            }
+            function makeHighRes(canvas) {
+                let ctx = canvas.getContext("2d");
+                // Get the device pixel ratio, falling back to 1.
+                dpr =
+                    window.devicePixelRatio ||
+                    window.webkitDevicePixelRatio ||
+                    window.mozDevicePixelRatio ||
+                    1;
+                // Give the canvas pixel dimensions of their CSS
+                // size * the device pixel ratio.
+                canvas.width = Math.round(oldWidth * dpr);
+                canvas.height = Math.round(oldHeight * dpr);
+                canvas.style.width = oldWidth + "px";
+                canvas.style.height = oldHeight + "px";
+                // Scale all drawing operations by the dpr, so you
+                // don't have to worry about the difference.
+                ctx.scale(dpr, dpr);
+                return ctx;
+            }
+            function drawText(text) {
+                context.clearRect(0, 0, display.width, display.height);
+                context.font = "20px Microsoft YaHei";
+                context.fillStyle = "#555";
+                context.textAlign = "center";
+                context.fillText(
+                    text,
+                    display.width / 2 / dpr,
+                    display.height / 2 / dpr
+                );
+            }
+            function _drawText(text, x, y, fontSize, fontColor) {
+                context.font = fontSize / 2 + "px Microsoft YaHei";
+                context.fillStyle = fontColor;
+                context.textAlign = "center";
+                context.fillText(text, x / dpr, y / dpr);
+            }
+            function drawImage(imageData) {
+                let img = new Image();
+                img.src = imageData;
+                img.onload = function () {
+                    let imgWidth = img.width,
+                        imgHeight = img.height;
+                    // alert(imgWidth + "," + imgHeight);
+                    oldHeight =
+                        Math.round(
+                            imgHeight / (imgWidth / display.width) / dpr
+                        ) + textAreaHeight;
+                    makeHighRes(display);
+
+                    context.drawImage(
+                        img,
+                        0,
+                        0,
+                        display.width / dpr,
+                        display.height / dpr - textAreaHeight
+                    );
+                    let data = context.getImageData(
+                        0,
+                        0,
+                        display.width,
+                        display.height - textAreaHeight
+                    );
+                    for (let i = 0; i < data.data.length; i += 4) {
+                        let grey =
+                            data.data[i] * 0.3 +
+                            data.data[i + 1] * 0.59 +
+                            data.data[i + 2] * 0.11;
+                        data.data[i] = data.data[i + 1] = data.data[
+                            i + 2
+                        ] = grey;
+                    }
+                    context.putImageData(data, 0, 0);
+                    context.fillStyle = "#000";
+                    context.fillRect(
+                        0,
+                        display.height / dpr - textAreaHeight,
+                        display.width / dpr,
+                        textAreaHeight
+                    );
+                };
+            }
+            display.addEventListener("dragover", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                drawText("释放鼠标");
+            });
+            display.addEventListener("dragleave", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                drawText("拖拽图片到此处或点击选择");
+            });
+            display.addEventListener("drop", function (e) {
+                // 必须要禁用浏览器默认事件
+                e.preventDefault();
+                e.stopPropagation();
+                let files = this.files || e.dataTransfer.files;
+                let reader = new FileReader();
+                reader.readAsDataURL(files[0]);
+                reader.onload = function (e) {
+                    drawImage(this.result);
+                };
+            });
+        </script>
     </body>
 </html>
