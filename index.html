@@ -19,8 +19,13 @@
             <div class="input-wrapper">
                 <input
                     type="text"
-                    class="text-raw"
-                    placeholder="输入表情包文字"
+                    class="japanese text-raw"
+                    placeholder="输入日文"
+                />
+                <input
+                    type="text"
+                    class="chinese text-raw"
+                    placeholder="输入中文"
                 />
             </div>
             <input
@@ -36,12 +41,11 @@
             let display = document.querySelector(".display");
             let context = display.getContext("2d");
             let dpr = 1;
-            let text = "";
+            let chinese = "";
+            let japanese = "";
+            let chinese_input = document.querySelector(".chinese");
+            let japanese_input = document.querySelector(".japanese");
             let textAreaHeight = 80;
-            let translation_url =
-                "https://fanyi-api.baidu.com/api/trans/vip/translate";
-            let appid = "20200427000431319";
-            let appkey = "lvDuIYmoNeRYuR_n2JXB";
             let oldWidth = parseInt(window.innerWidth * 0.7);
             let oldHeight = display.height;
             let file_selector = document.getElementById("file-selector");
@@ -64,58 +68,34 @@
                 });
                 file_selector.dispatchEvent(event);
             };
-            document.querySelector(".text-raw").oninput = function () {
-                text = this.value;
-                translate(text)
-                    .then(function (response) {
-                        context.fillStyle = "#000";
-                        console.log(response);
-                        let translated = response.data.trans_result[0].dst;
-                        context.fillRect(
-                            0,
-                            display.height / dpr - textAreaHeight,
-                            display.width / dpr,
-                            textAreaHeight
-                        );
-                        _drawText(
-                            text,
-                            display.width / 2,
-                            display.height - textAreaHeight / 2,
-                            textAreaHeight / dpr,
-                            "#fff"
-                        );
-                        _drawText(
-                            translated,
-                            display.width / 2,
-                            display.height - textAreaHeight * 1.1,
-                            textAreaHeight / dpr,
-                            "#fff"
-                        );
-                    })
-                    .catch(function (error) {
-                        console.log(error);
-                    });
+            japanese_input.oninput = chinese_input.oninput = function () {
+                japanese = japanese_input.value;
+                chinese = chinese_input.value;
+                context.fillStyle = "#000";
+                context.fillRect(
+                    0,
+                    display.height / dpr - textAreaHeight,
+                    display.width / dpr,
+                    textAreaHeight
+                );
+                _drawText(
+                    chinese,
+                    display.width / 2,
+                    display.height - textAreaHeight / 2,
+                    textAreaHeight / dpr,
+                    "#fff"
+                );
+                _drawText(
+                    japanese,
+                    display.width / 2,
+                    display.height - textAreaHeight * 1.1,
+                    textAreaHeight / dpr,
+                    "#fff"
+                );
             };
 
             function onLoad() {
                 drawText("拖拽图片到此处或点击选择");
-            }
-            function translate(text) {
-                let q = encodeURI(text);
-                let salt = Math.round(Math.random() * 10000);
-                let sign = CryptoJS.MD5(appid + text + salt + appkey);
-                let url_with_query =
-                    translation_url +
-                    "?" +
-                    "q=" +
-                    q +
-                    "&from=auto&to=jp&appid=" +
-                    appid +
-                    "&salt=" +
-                    salt +
-                    "&sign=" +
-                    sign;
-                return axios.get(url_with_query);
             }
             function makeHighRes(canvas) {
                 let ctx = canvas.getContext("2d");

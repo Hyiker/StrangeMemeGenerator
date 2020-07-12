@@ -55,6 +55,7 @@ main {
     background: #fff;
     border: 2px solid #aaa;
     border-radius: 7px;
+    margin: 7px auto;
 }
 .input-wrapper {
     width: 50%;
